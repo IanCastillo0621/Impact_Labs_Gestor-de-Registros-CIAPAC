@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+.vscode/
+static/.DS_Store
+.DS_Store
+ 
+# Nunca subir datos personales reales
+*.xlsx
+*.xls
+data/
+ 

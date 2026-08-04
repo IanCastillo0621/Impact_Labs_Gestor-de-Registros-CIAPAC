@@ -1,0 +1,10 @@
+
+CREATE DATABASE IF NOT EXISTS registro_escaneos;
+USE registro_escaneos;
+
+CREATE TABLE IF NOT EXISTS registros (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(100) NOT NULL,
+    fecha_hora DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+

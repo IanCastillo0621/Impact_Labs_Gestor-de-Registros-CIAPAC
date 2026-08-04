@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CIAPAC – Dashboard Comedor</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+:root{--blue:#1F3864;--lblue:#BDD7EE;--shdr:#DEEAF1;
+      --hi:#C6EFCE;--hit:#276221;--md:#FFEB9C;--mdt:#9C5700;--lo:#FFC7CE;--lot:#9C0006;}
+body{background:#f0f2f5;font-size:.88rem;}
+.top-header{background:var(--blue);color:#fff;text-align:center;padding:14px 0;
+            font-size:1.25rem;font-weight:700;letter-spacing:1px;}
+.sec-hdr{background:var(--shdr);color:var(--blue);font-weight:700;padding:6px 12px;
+         border-left:4px solid var(--blue);margin:18px 0 8px;font-size:.9rem;}
+.table-dash th{background:var(--blue);color:#fff;font-weight:600;font-size:.8rem;
+               text-align:center;vertical-align:middle;white-space:nowrap;}
+.table-dash td{text-align:center;vertical-align:middle;font-size:.83rem;}
+.table-dash td:first-child{text-align:left;font-weight:500;}
+.row-total{background:var(--lblue)!important;font-weight:700;}
+.c-hi{background:var(--hi)!important;color:var(--hit);font-weight:700;}
+.c-md{background:var(--md)!important;color:var(--mdt);font-weight:700;}
+.c-lo{background:var(--lo)!important;color:var(--lot);font-weight:700;}
+.badge-alta{background:var(--hi);color:var(--hit);padding:3px 10px;border-radius:4px;font-weight:700;}
+.badge-media{background:var(--md);color:var(--mdt);padding:3px 10px;border-radius:4px;font-weight:700;}
+.badge-baja{background:var(--lo);color:var(--lot);padding:3px 10px;border-radius:4px;font-weight:700;}
+.metric-card{background:#fff;border:1px solid #dee2e6;border-radius:8px;padding:12px 16px;height:100%;}
+.metric-lbl{color:#6c757d;font-size:.73rem;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.metric-val{font-size:1.4rem;font-weight:700;color:var(--blue);}
+.nav-tabs .nav-link.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.nav-tabs .nav-link{color:var(--blue);font-weight:600;}
+.profile-hdr{background:var(--blue);color:#fff;padding:10px 16px;font-weight:700;font-size:.92rem;}
+.profile-body{padding:14px;}
+.overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);
+         display:flex;align-items:center;justify-content:center;z-index:9999;}
+.d-none{display:none!important;}
+.card-ctrl{background:#fff;border:1px solid #dee2e6;border-radius:8px;padding:12px 16px;margin-bottom:16px;}
+.table-responsive{border-radius:6px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.chart-wrap{background:#fff;border-radius:8px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="top-header"><i class="bi bi-building"></i>&nbsp; CIAPAC – SISTEMA DE COMEDOR</div>
+
+<!-- Loading overlay -->
+<div id="overlay" class="overlay d-none">
+  <div class="text-center text-white">
+    <div class="spinner-border" style="width:3rem;height:3rem;"></div>
+    <div class="mt-2 fw-semibold">Cargando datos…</div>
+  </div>
+</div>
+
+<div class="container-fluid p-3">
+  <!-- Tab nav -->
+  <ul class="nav nav-tabs mb-3" id="mainTabs">
+    <li class="nav-item"><button class="nav-link active" onclick="switchTab('mensual')"><i class="bi bi-calendar-month me-1"></i>Dashboard Mensual</button></li>
+    <li class="nav-item"><button class="nav-link" onclick="switchTab('anual')"><i class="bi bi-bar-chart-line me-1"></i>Dashboard Anual</button></li>
+    <li class="nav-item"><button class="nav-link" onclick="switchTab('perfiles')"><i class="bi bi-person-lines-fill me-1"></i>Perfiles Individuales</button></li>
+    <li class="nav-item"><button class="nav-link" onclick="switchTab('fechas')"><i class="bi bi-calendar-range me-1"></i>Análisis por Fecha</button></li>
+  </ul>
+
+  <!-- ═══════════════════ TAB MENSUAL ═══════════════════ -->
+  <div id="panel-mensual">
+    <div class="card-ctrl d-flex flex-wrap align-items-center gap-3">
+      <div class="d-flex align-items-center gap-2">
+        <span class="fw-bold">Mes:</span>
+        <select id="selMes" class="form-select form-select-sm" style="width:140px"></select>
+        <select id="selAnio" class="form-select form-select-sm" style="width:90px"></select>
+      </div>
+      <div class="ms-auto d-flex align-items-center gap-3">
+        <span>Aforo máximo: <strong class="text-primary">200</strong></span>
+        <button class="btn btn-primary btn-sm" onclick="loadMensual()"><i class="bi bi-arrow-clockwise me-1"></i>Actualizar Dashboard</button>
+      </div>
+    </div>
+    <div id="mensualContent"></div>
+  </div>
+
+  <!-- ═══════════════════ TAB ANUAL ═══════════════════ -->
+  <div id="panel-anual" class="d-none">
+    <div class="card-ctrl d-flex flex-wrap align-items-center gap-3">
+      <div class="d-flex align-items-center gap-2">
+        <span class="fw-bold">Ciclo escolar:</span>
+        <select id="selCiclo" class="form-select form-select-sm" style="width:140px"></select>
+      </div>
+      <div class="ms-auto d-flex align-items-center gap-3">
+        <span>Aforo máximo: <strong class="text-primary">100</strong></span>
+        <button class="btn btn-primary btn-sm" onclick="loadAnual()"><i class="bi bi-arrow-clockwise me-1"></i>Actualizar Dashboard Anual</button>
+      </div>
+    </div>
+    <div id="anualContent"></div>
+  </div>
+
+  <!-- ═══════════════════ TAB PERFILES ═══════════════════ -->
+  <div id="panel-perfiles" class="d-none">
+    <div class="card-ctrl">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-8">
+          <label class="form-label fw-bold mb-1">IDs a analizar <small class="text-muted">(separados por coma)</small></label>
+          <input id="idsInput" type="text" class="form-control form-control-sm"
+                 placeholder="Ej: DE03AB10BAYYCU, MA03RA12CRYYTO, OC02GA09GOYYRO">
+        </div>
+        <div class="col-md-4">
+          <button class="btn btn-primary btn-sm w-100" onclick="loadPerfiles()"><i class="bi bi-search me-1"></i>Analizar Perfiles</button>
+        </div>
+      </div>
+      <div class="text-muted mt-1" style="font-size:.78rem;">Los resultados aparecerán a continuación, una tabla por cada ID ingresado.</div>
+    </div>
+    <div id="perfilesContent"></div>
+  </div>
+
+  <!-- ═══════════════════ TAB FECHAS ═══════════════════ -->
+  <div id="panel-fechas" class="d-none">
+    <div class="card-ctrl">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label fw-bold mb-1">Fecha inicio</label>
+          <input id="fechaInicio" type="date" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold mb-1">Fecha fin <small class="text-muted">(opcional)</small></label>
+          <input id="fechaFin" type="date" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-3">
+          <button class="btn btn-primary btn-sm w-100" onclick="loadFechas()"><i class="bi bi-search me-1"></i>Analizar Fechas</button>
+        </div>
+        <div class="col-md-3">
+          <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearFechaFin()"><i class="bi bi-x-circle me-1"></i>Solo fecha inicio</button>
+        </div>
+      </div>
+    </div>
+    <div id="fechasContent"></div>
+  </div>
+</div>
+
+<script>
+// ───────── Utilities ─────────
+const MESES = ["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const SCHOOL_M = [8,9,10,11,12,1,2,3,4,5,6,7];
+const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
+
+function loading(on){ document.getElementById("overlay").classList.toggle("d-none",!on); }
+
+function switchTab(name){
+  document.querySelectorAll("#mainTabs .nav-link").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll("[id^='panel-']").forEach(p=>p.classList.add("d-none"));
+  document.querySelector(`button[onclick="switchTab('${name}')"]`).classList.add("active");
+  document.getElementById("panel-"+name).classList.remove("d-none");
+}
+
+// Color class: 3-tier heatmap
+function cc(val, vals){
+  const nonZero = vals.filter(v=>v>0);
+  if(!val || nonZero.length===0) return "";
+  const mx = Math.max(...nonZero), mn = Math.min(...nonZero);
+  if(mx===mn) return "c-hi";
+  const r = (val-mn)/(mx-mn);
+  return r>=0.67?"c-hi":r>=0.33?"c-md":"c-lo";
+}
+
+function fmt(n){ return n==null?"-":n; }
+function pct(n){ return n==null?"-":n+"%"; }
+function badge(nivel){
+  const cls = nivel==="Alta"?"badge-alta":nivel==="Media"?"badge-media":"badge-baja";
+  return `<span class="${cls}">${nivel}</span>`;
+}
+
+function metCard(label, value, small=""){
+  return `<div class="col"><div class="metric-card"><div class="metric-lbl">${label}</div><div class="metric-val">${value}</div>${small?`<small class="text-muted">${small}</small>`:""}</div></div>`;
+}
+
+function errCard(msg){
+  return `<div class="alert alert-danger mt-2"><i class="bi bi-exclamation-triangle me-2"></i>${msg}</div>`;
+}
+
+// ───────── Init selects ─────────
+function initSelects(){
+  const now = new Date();
+  const mesEl = document.getElementById("selMes");
+  const anioEl = document.getElementById("selAnio");
+  const cicloEl = document.getElementById("selCiclo");
+
+  SCHOOL_M.forEach(m=>{
+    const o = document.createElement("option");
+    o.value = m; o.textContent = MESES[m];
+    if(m===now.getMonth()+1) o.selected=true;
+    mesEl.appendChild(o);
+  });
+
+  for(let y=2024; y<=now.getFullYear()+1; y++){
+    const o = document.createElement("option");
+    o.value=y; o.textContent=y;
+    if(y===now.getFullYear()) o.selected=true;
+    anioEl.appendChild(o);
+  }
+
+  // School years from 2024-2025 to current
+  const curSY = now.getMonth()<7 ? now.getFullYear()-1 : now.getFullYear();
+  for(let y=2024; y<=now.getFullYear(); y++){
+    const o = document.createElement("option");
+    o.value=y; o.textContent=`${y}–${y+1}`;
+    if(y===curSY) o.selected=true;
+    cicloEl.appendChild(o);
+  }
+
+  // Date inputs default to today
+  const today = now.toISOString().split("T")[0];
+  document.getElementById("fechaInicio").value = today;
+}
+
+// ───────── DASHBOARD MENSUAL ─────────
+async function loadMensual(){
+  const mes  = document.getElementById("selMes").value;
+  const anio = document.getElementById("selAnio").value;
+  loading(true);
+  try{
+    const r = await fetch(`/api/mensual?year=${anio}&month=${mes}`);
+    const d = await r.json();
+    if(d.error){ document.getElementById("mensualContent").innerHTML=errCard(d.error); return; }
+    renderMensual(d);
+  }catch(e){ document.getElementById("mensualContent").innerHTML=errCard("Error al conectar con el servidor: "+e.message); }
+  finally{ loading(false); }
+}
+
+function renderMensual(d){
+  const el = document.getElementById("mensualContent");
+  const s1=d.s1, s2=d.s2, s3=d.s3, s4=d.s4, s5=d.s5, s6=d.s6, s8=d.s8;
+
+  // Heatmap helpers for s3 and s4
+  const s3tots = s3.map(r=>r.total);
+  const s4allVals = d.s4.tabla.flatMap(r=>["Lunes","Martes","Miércoles","Jueves","Viernes"].map(dia=>r[dia]));
+
+// Section 3 table
+  const s3totalGen = s3.reduce((a,r)=>a+r.total,0);
+  let s3rows = s3.map(r=>`
+    <tr>
+      <td>${r.dia}</td>
+      <td class="${cc(r.total,s3tots)}">${r.total}</td>
+      <td>${r.pct_total}%</td>
+      <td>${r.promedio}</td>
+      <td>${r.adultos}</td>
+      <td>${r.pct_adultos}%</td>
+      <td>${r.ninos}</td>
+      <td>${r.pct_ninos}%</td>
+    </tr>`).join("");
+  s3rows += `<tr class="row-total">
+    <td>TOTAL</td>
+    <td>${s3totalGen}</td>
+    <td>100%</td>
+    <td>-</td>
+    <td>${s3.reduce((a,r)=>a+r.adultos,0)}</td>
+    <td>-</td>
+    <td>${s3.reduce((a,r)=>a+r.ninos,0)}</td>
+    <td>-</td>
+  </tr>`;
+  // Section 4 table
+  let s4rows = s4.tabla.map(r=>{
+    const vals = DIAS.map(d=>r[d]);
+    return `<tr>
+      <td>${r.intervalo}</td>
+      ${DIAS.map(dia=>`<td class="${cc(r[dia],s4allVals)}">${r[dia]}</td>`).join("")}
+      <td class="fw-bold">${r.lambda_promedio}</td>
+    </tr>`;
+  }).join("");
+  const t4 = s4.total;
+  const t4vals = DIAS.map(d=>t4[d]);
+  s4rows += `<tr class="row-total">
+    <td>${t4.intervalo}</td>
+    ${DIAS.map(d=>`<td>${t4[d]}</td>`).join("")}
+    <td>${t4.lambda_promedio}</td>
+  </tr>`;
+
+  // Section 5 table
+  let s5rows = s5.predicciones.map(p=>`
+    <tr>
+      <td>${p.intervalo}</td>
+      <td>${p.esperadas}</td>
+      <td>${p.minimo}</td>
+      <td>${p.maximo}</td>
+      <td>${p.prob_hora_pico}%</td>
+      <td>${p.confiabilidad}%</td>
+      <td>${badge(p.nivel)}</td>
+    </tr>`).join("");
+  s5rows += `<tr class="row-total"><td>TOTAL DÍA</td><td>${s5.total_dia}</td><td></td><td></td><td></td><td></td><td></td></tr>`;
+
+  // Section 6 table
+  let s6rows = s6.map(p=>`
+    <tr>
+      <td>${p.rank}</td>
+      <td style="font-family:monospace;font-size:.78rem">${p.id}</td>
+      <td>${p.nombre}</td>
+      <td>${p.apellidos}</td>
+      <td><span class="badge ${p.tipo==='Niño'?'bg-info':'bg-warning text-dark'}">${p.tipo}</span></td>
+      <td class="fw-bold">${p.asistencias}</td>
+    </tr>`).join("");
+
+  el.innerHTML = `
+    <div class="sec-hdr">SECCIÓN 1 — Afluencia General</div>
+    <div class="row row-cols-2 row-cols-md-5 g-2 mb-3">
+      ${metCard("Total Entradas Mes", s1.total)}
+      ${metCard("Promedio Diario", s1.promedio_diario)}
+      ${metCard("Día Más Concurrido", s1.dia_mas)}
+      ${metCard("Día Menos Concurrido", s1.dia_menos)}
+      ${metCard("% Capacidad Promedio", s1.pct_capacidad+"%")}
+    </div>
+
+    <div class="sec-hdr">SECCIÓN 2 — Adultos vs Niños</div>
+    <div class="table-responsive mb-3">
+      <table class="table table-bordered table-sm table-dash mb-0">
+        <thead><tr><th>Tipo</th><th>Total</th><th>Promedio Diario</th><th>% del Total</th></tr></thead>
+        <tbody>
+          <tr><td>Adultos</td><td>${s2.adultos}</td><td>${s2.adultos_prom}</td><td>${s2.pct_adultos}%</td></tr>
+          <tr><td>Niños</td><td>${s2.ninos}</td><td>${s2.ninos_prom}</td><td>${s2.pct_ninos}%</td></tr>
+          <tr class="row-total"><td>Total</td><td>${s2.total}</td><td>${d.s1.promedio_diario}</td><td>100%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sec-hdr">SECCIÓN 3 — Distribución por Día de Semana</div>
+    <div class="table-responsive mb-3">
+      <table class="table table-bordered table-sm table-dash mb-0">
+        <thead><tr><th>Día</th><th>Total</th><th>% del Mes</th><th>Prom/Día</th><th>Adultos</th><th>% Adultos</th><th>Niños</th><th>% Niños</th></tr></thead>
+        <tbody>${s3rows}</tbody>
+      </table>
+    </div>
+
+    <div class="sec-hdr">SECCIÓN 4 — Lambda Poisson por Intervalo (30 min)</div>
+    <div class="table-responsive mb-3">
+      <table class="table table-bordered table-sm table-dash mb-0">
+        <thead><tr><th>Intervalo</th>${DIAS.map(d=>`<th>${d}</th>`).join("")}<th>Lambda Promedio</th></tr></thead>
+        <tbody>${s4rows}</tbody>
+      </table>
+    </div>
+
+    <div class="sec-hdr">SECCIÓN 5 — Predicción Próximo Día <span class="ms-2 text-muted fw-normal" style="font-size:.82rem">(${s5.next_day} ${s5.next_fecha})</span></div>
+    <div class="table-responsive mb-3">
+      <table class="table table-bordered table-sm table-dash mb-0">
+        <thead><tr><th>Intervalo</th><th>Entradas Esperadas</th><th>Mínimo Esperado</th><th>Máximo Esperado</th><th>Prob. Hora Pico</th><th>Confiabilidad</th><th>Nivel</th></tr></thead>
+        <tbody>${s5rows}</tbody>
+      </table>
+    </div>
+
+    <div class="sec-hdr">SECCIÓN 6 — Top 10 Asistentes</div>
+    <div class="table-responsive mb-3">
+      <table class="table table-bordered table-sm table-dash mb-0">
+        <thead><tr><th>Rank</th><th>ID</th><th>Nombre</th><th>Apellidos</th><th>Tipo</th><th>Asistencias</th></tr></thead>
+        <tbody>${s6rows}</tbody>
+      </table>
+    </div>
+
+    <div class="sec-hdr">SECCIÓN 7 — Comidas por Día</div>
+    ${renderS7(d.s7)}
+
+    <div class="sec-hdr">SECCIÓN 8 — Estadísticas Demográficas de Asistentes</div>
+    ${renderS8(d.s8)}
+  `;
+}
+
+function renderS7(s7){
+  if(!s7||s7.length===0)
+    return `<div class="alert alert-info">No hay registros para este mes.</div>`;
+
+  const totals = s7.map(d=>d.total);
+
+  // Chips de fechas
+  const chips = s7.map((fd,i)=>{
+    const colorHdr = cc(fd.total, totals);
+    const chipStyle = colorHdr==='c-hi'?'background:#C6EFCE;color:#276221;border-color:#276221'
+                    : colorHdr==='c-md'?'background:#FFEB9C;color:#9C5700;border-color:#9C5700'
+                    : colorHdr==='c-lo'?'background:#FFC7CE;color:#9C0006;border-color:#9C0006'
+                    : 'background:#e9ecef;color:#495057;border-color:#adb5bd';
+    return `<button type="button" onclick="s7ToggleFecha(${i},this)"
+              data-idx="${i}" data-active="1"
+              class="btn btn-sm s7-chip"
+              style="font-size:.76rem;padding:3px 9px;border:1.5px solid;border-radius:20px;${chipStyle}">
+              ${fd.fecha_display} <span style="font-weight:400">${fd.dia_semana.slice(0,3)}</span>
+              <span class="ms-1 fw-bold">(${fd.total})</span>
+            </button>`;
+  }).join(" ");
+
+  // Items del acordeón
+  const items = s7.map((fd,i)=>{
+    const entVals = fd.entradas.map(e=>e.apariciones);
+    const rows = fd.entradas.map(e=>`
+      <tr>
+        <td style="font-family:monospace;font-size:.78rem">${e.id}</td>
+        <td>${e.nombre}</td>
+        <td>${e.apellidos}</td>
+        <td><span class="badge ${e.tipo==='Niño'?'bg-info':'bg-warning text-dark'}">${e.tipo}</span></td>
+        <td class="${cc(e.apariciones,entVals)} fw-bold">${e.apariciones}</td>
+      </tr>`).join("");
+
+    const colorHdr = cc(fd.total, totals);
+    const hdrStyle = colorHdr==='c-hi'?'background:#C6EFCE;color:#276221'
+                   : colorHdr==='c-md'?'background:#FFEB9C;color:#9C5700'
+                   : colorHdr==='c-lo'?'background:#FFC7CE;color:#9C0006':'';
+
+    return `
+    <div id="s7-wrap-${i}" class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button"
+                data-bs-toggle="collapse" data-bs-target="#s7-${i}" style="${hdrStyle}">
+          <strong>${fd.fecha_display}</strong>
+          <span class="ms-2" style="opacity:.7">${fd.dia_semana}</span>
+          <span class="badge bg-primary ms-3">${fd.total} registro${fd.total!==1?'s':''}</span>
+        </button>
+      </h2>
+      <div id="s7-${i}" class="accordion-collapse collapse">
+        <div class="accordion-body p-2">
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm table-dash mb-0">
+              <thead><tr><th>ID</th><th>Nombre</th><th>Apellidos</th><th>Tipo</th><th>Apariciones</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  return `
+    <div class="card-ctrl mb-2">
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <button class="btn btn-sm btn-outline-primary" onclick="s7SelectAll(true)">Seleccionar todas</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="s7SelectAll(false)">Deseleccionar todas</button>
+        <div class="vr"></div>
+        <button class="btn btn-sm btn-primary" onclick="s7ExpandAll(true)">Desplegar todas</button>
+        <button class="btn btn-sm btn-outline-primary" onclick="s7ExpandAll(false)">Colapsar todas</button>
+      </div>
+      <div id="s7-chips" class="d-flex flex-wrap gap-1">${chips}</div>
+    </div>
+    <div class="accordion mb-3" id="s7-accordion">${items}</div>`;
+}
+
+function renderS8(s8){
+  if(!s8) return `<div class="alert alert-info">No hay datos demográficos disponibles.</div>`;
+
+  function statTable(titulo, data){
+    if(!data || typeof data !== 'object' || Object.keys(data).length === 0)
+      return `<p class="text-muted" style="font-size:.8rem">Sin datos</p>`;
+    const vals = Object.values(data);
+    const total = vals.reduce((a,b)=>a+b,0);
+    const rows = Object.entries(data).map(([k,v])=>`
+      <tr>
+        <td>${k}</td>
+        <td class="${cc(v,vals)} fw-bold">${v}</td>
+        <td>${total?Math.round(v/total*1000)/10:0}%</td>
+      </tr>`).join("");
+    return `
+      <div class="mb-3">
+        <div style="font-size:.78rem;font-weight:700;color:var(--blue);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">${titulo}</div>
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm table-dash mb-0">
+            <thead><tr><th>Valor</th><th>Total</th><th>%</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  const nin  = s8.ninos   || {};
+  const adu  = s8.adultos || {};
+  const ninErr = nin.error  ? `<div class="alert alert-warning">Error BD niños: ${nin.error}</div>`  : "";
+  const aduErr = adu.error  ? `<div class="alert alert-warning">Error BD adultos: ${adu.error}</div>` : "";
+
+  return `
+    <div class="row g-3">
+      <!-- NIÑOS -->
+      <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+          <div class="profile-hdr"><i class="bi bi-people-fill me-2"></i>Niños — ${nin.asistentes_unicos ?? 0} asistentes únicos</div>
+          <div class="profile-body">
+            ${ninErr}
+            ${statTable("Género",        nin.genero)}
+            ${statTable("Edad",          nin.edad)}
+            ${statTable("Grado Escolar", nin.grado_escolar)}
+            ${statTable("Escuela",       nin.escuela)}
+            ${statTable("Municipio",     nin.municipio)}
+            ${statTable("Colonia",       nin.colonia)}
+            ${statTable("Domicilio",     nin.domicilio)}
+          </div>
+        </div>
+      </div>
+      <!-- ADULTOS -->
+      <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+          <div class="profile-hdr"><i class="bi bi-person-fill me-2"></i>Adultos — ${adu.asistentes_unicos ?? 0} asistentes únicos</div>
+          <div class="profile-body">
+            ${aduErr}
+            ${statTable("Género",       adu.genero)}
+            ${statTable("Edad",         adu.edad)}
+            ${statTable("Estado Civil", adu.estado_civil)}
+            ${statTable("Escolaridad",  adu.escolaridad)}
+            ${statTable("Ocupación",    adu.ocupacion)}
+            ${statTable("Municipio",    adu.municipio)}
+            ${statTable("Colonia",      adu.colonia)}
+            ${statTable("Domicilio",    adu.domicilio)}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function s7ToggleFecha(idx, btn){
+  const active = btn.dataset.active === "1";
+  const wrap = document.getElementById(`s7-wrap-${idx}`);
+  const panel = document.getElementById(`s7-${idx}`);
+  if(active){
+    btn.dataset.active = "0";
+    btn.style.opacity = "0.35";
+    wrap.style.display = "none";
+    // collapse if open
+    bootstrap.Collapse.getOrCreateInstance(panel).hide();
+  } else {
+    btn.dataset.active = "1";
+    btn.style.opacity = "1";
+    wrap.style.display = "";
+  }
+}
+
+function s7SelectAll(select){
+  document.querySelectorAll(".s7-chip").forEach(btn=>{
+    const idx = parseInt(btn.dataset.idx);
+    const currentlyActive = btn.dataset.active === "1";
+    if(select && !currentlyActive) s7ToggleFecha(idx, btn);
+    if(!select && currentlyActive) s7ToggleFecha(idx, btn);
+  });
+}
+
+function s7ExpandAll(expand){
+  document.querySelectorAll("#s7-accordion .accordion-collapse").forEach(panel=>{
+    const wrap = panel.closest(".accordion-item");
+    if(wrap && wrap.style.display==="none") return; // skip hidden
+    const inst = bootstrap.Collapse.getOrCreateInstance(panel, {toggle:false});
+    expand ? inst.show() : inst.hide();
+  });
+}
+
+// ───────── DASHBOARD ANUAL ─────────
+async function loadAnual(){
+  const ciclo = document.getElementById("selCiclo").value;
+  loading(true);
+  try{
+    const r = await fetch(`/api/anual?year=${ciclo}`);
+    const d = await r.json();
+    if(d.error){ document.getElementById("anualContent").innerHTML=errCard(d.error); return; }
+    renderAnual(d);
+  }catch(e){ document.getElementById("anualContent").innerHTML=errCard("Error: "+e.message); }
+  finally{ loading(false); }
+}
+
+function renderAnual(d){
+  const el = document.getElementById("anualContent");
+  const s1=d.s1;
+
+  // Section 2 monthly table
+  const s2tots = d.s2.map(m=>m.total);
+  let s2rows = d.s2.map(m=>`
+    <tr>
+      <td>${m.mes}</td>
+      <td class="${cc(m.total,s2tots)}">${m.total}</td>
+      <td>${m.dias_habiles||0}</td>
+      <td>${m.promedio_diario}</td>
+      <td>${m.adultos}</td>
+      <td>${m.ninos}</td>
+      <td>${m.pct_adultos}%</td>
+      <td>${m.pct_ninos}%</td>
+      <td>${m.pct_capacidad}%</td>
+      <td>${m.hora_pico}</td>
+    </tr>`).join("");
+  const totA = d.s2.reduce((a,m)=>a+m.adultos,0);
+  const totN = d.s2.reduce((a,m)=>a+m.ninos,0);
+  const totT = totA+totN;
+  s2rows += `<tr class="row-total"><td>TOTAL AÑO</td><td>${totT}</td><td>${d.s2.reduce((a,m)=>a+m.dias_habiles,0)}</td>
+    <td>${s1.prom_diario}</td><td>${totA}</td><td>${totN}</td>
+    <td>${totT?Math.round(totA/totT*10000)/100:0}%</td>
+    <td>${totT?Math.round(totN/totT*10000)/100:0}%</td>
+    <td>${s1.pct_cap}%</td><td>-</td></tr>`;
+
+  // Section 3
+  const s3tots = d.s3.map(r=>r.total);
+  const s3totalGen = d.s3.reduce((a,r)=>a+r.total,0);
+  let s3rows = d.s3.map(r=>`
+    <tr>
+      <td>${r.dia}</td>
+      <td class="${cc(r.total,s3tots)}">${r.total}</td>
+      <td>${r.pct_total}%</td>
+      <td>${r.promedio}</td>
+      <td>${r.adultos}</td>
+      <td>${r.pct_adultos}%</td>
+      <td>${r.ninos}</td>
+      <td>${r.pct_ninos}%</td>
+    </tr>`).join("");
+  s3rows += `<tr class="row-total">
+    <td>TOTAL</td>
+    <td>${s3totalGen}</td>
+    <td>100%</td>
+    <td>-</td>
+    <td>${d.s3.reduce((a,r)=>a+r.adultos,0)}</td>
+    <td>-</td>
+    <td>${d.s3.reduce((a,r)=>a+r.ninos,0)}</td>
+    <td>-</td>
+  </tr>`;
+
+  // Section 4
+  const s4allVals = d.s4.tabla.flatMap(r=>DIAS.map(dia=>r[dia]));
+  let s4rows = d.s4.tabla.map(r=>`<tr>
+    <td>${r.intervalo}</td>
+    ${DIAS.map(dia=>`<td class="${cc(r[dia],s4allVals)}">${r[dia]}</td>`).join("")}
+    <td class="fw-bold">${r.lambda_promedio}</td>
+  </tr>`).join("");
+  const t4=d.s4.total;
+  s4rows += `<tr class="row-total"><td>${t4.intervalo}</td>${DIAS.map(dia=>`<td>${t4[dia]}</td>`).join("")}<td>${t4.lambda_promedio}</td></tr>`;
+
+  // Section 5 top10
+  let s5rows = d.s5.map(p=>`
+    <tr><td>${p.rank}</td>
+    <td style="font-family:monospace;font-size:.78rem">${p.id}</td>
+    <td>${p.nombre}</td><td>${p.apellidos}</td>
+    <td><span class="badge ${p.tipo==='Niño'?'bg-info':'bg-warning text-dark'}">${p.tipo}</span></td>
+    <td class="fw-bold">${p.asistencias}</td></tr>`).join("");
+
+  el.innerHTML = `
+    <div class="sec-hdr">SECCIÓN 1 — Resumen Anual &nbsp;<span class="fw-normal text-muted">${d.ciclo}</span></div>
+    <div class="row row-cols-2 row-cols-md-4 g-2 mb-3">
+      ${metCard("Total Entradas Año", s1.total_year)}
+      ${metCard("Promedio Mensual", s1.prom_mensual)}
+      ${metCard("Promedio Diario Anual", s1.prom_diario)}
+      ${metCard("Total Adultos", s1.adultos)}
+      ${metCard("Total Niños", s1.ninos)}
+      ${metCard("Mes Más Concurrido", s1.mes_mas)}
+      ${metCard("Mes Menos Concurrido", s1.mes_menos)}
+      ${metCard("% Capacidad Promedio Anual", s1.pct_cap+"%")}
+    </div>
+
+    <div class="sec-hdr">SECCIÓN 2 — Comparativa por Mes</div>
+    <div class="table-responsive mb-3">
+      <table class="table table-bordered table-sm table-dash mb-0">
+        <thead><tr><th>Mes</th><th>Total Entradas</th><th>Días Hábiles</th><th>Promedio Diario</th>
+          <th>Adultos</th><th>Niños</th><th>% Adultos</th><th>% Niños</th><th>% Capacidad</th><th>Hora Pico</th></tr></thead>
+        <tbody>${s2rows}</tbody>
+      </table>
+    </div>
+
+    <div class="sec-hdr">SECCIÓN 3 — Distribución Anual por Día de Semana</div>
+    <div class="table-responsive mb-3">
+      <table class="table table-bordered table-sm table-dash mb-0">
+        <thead><tr><th>Día</th><th>Total</th><th>% del Ciclo</th><th>Prom/Día</th><th>Adultos</th><th>% Adultos</th><th>Niños</th><th>% Niños</th></tr></thead>
+        <tbody>${s3rows}</tbody>
+      </table>
+    </div>
+
+    <div class="sec-hdr">SECCIÓN 4 — Lambda Poisson Anual por Intervalo</div>
+    <div class="table-responsive mb-3">
+      <table class="table table-bordered table-sm table-dash mb-0">
+        <thead><tr><th>Intervalo</th>${DIAS.map(d=>`<th>${d}</th>`).join("")}<th>Lambda Promedio</th></tr></thead>
+        <tbody>${s4rows}</tbody>
+      </table>
+    </div>
+
+    <div class="sec-hdr">SECCIÓN 5 — Top 10 Asistentes del Año</div>
+    <div class="table-responsive mb-3">
+      <table class="table table-bordered table-sm table-dash mb-0">
+        <thead><tr><th>Rank</th><th>ID</th><th>Nombre</th><th>Apellidos</th><th>Tipo</th><th>Total Asistencias</th></tr></thead>
+        <tbody>${s5rows}</tbody>
+      </table>
+    </div>
+    <div class="sec-hdr">SECCIÓN 6 — Estadísticas Demográficas de Asistentes del Ciclo</div>
+    ${renderS8(d.s6)}
+  `;
+}
+
+// ───────── PERFILES INDIVIDUALES ─────────
+async function loadPerfiles(){
+  const ids = document.getElementById("idsInput").value.trim();
+  if(!ids){ alert("Por favor ingresa al menos un ID."); return; }
+  loading(true);
+  try{
+    const r = await fetch(`/api/perfiles?ids=${encodeURIComponent(ids)}`);
+    const d = await r.json();
+    if(d.error){ document.getElementById("perfilesContent").innerHTML=errCard(d.error); return; }
+    renderPerfiles(d);
+  }catch(e){ document.getElementById("perfilesContent").innerHTML=errCard("Error: "+e.message); }
+  finally{ loading(false); }
+}
+
+function renderPerfiles(d){
+  const el = document.getElementById("perfilesContent");
+  if(!d.perfiles||d.perfiles.length===0){ el.innerHTML=errCard("No se encontraron datos para los IDs proporcionados."); return; }
+
+  const cards = d.perfiles.map(p=>{
+    const allMeses = ["Agosto","Septiembre","Octubre","Noviembre","Diciembre",
+                      "Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio"];
+    const mesVals  = allMeses.map(m=>p.por_mes[m]||0);
+    const mesMax   = Math.max(...mesVals,1);
+
+    let mesRow = allMeses.map((m,i)=>{
+      const v=mesVals[i];
+      return `<td class="${v>0?cc(v,mesVals.filter(x=>x>0)):''}">${v||0}</td>`;
+    }).join("");
+
+    const diaVals = p.por_dia.map(d=>d.count);
+    let diaRow = p.por_dia.map(d=>`<td class="${cc(d.count,diaVals)}">${d.count}</td>`).join("");
+
+    const ivlVals = p.por_intervalo.map(iv=>iv.count);
+    let ivlRow = p.por_intervalo.map(iv=>`<td class="${cc(iv.count,ivlVals)}">${iv.count}</td>`).join("");
+
+    return `
+    <div class="card mb-3 shadow-sm">
+      <div class="profile-hdr">
+        PERFIL: ${p.id} &nbsp;|&nbsp; ${p.nombre} ${p.apellidos} &nbsp;|&nbsp; Tipo: ${p.tipo}
+      </div>
+      <div class="profile-body">
+        <div class="row g-2 mb-3">
+          ${metCard("Total Asistencias", p.total)}
+          ${metCard("Primera Visita", p.primera_visita)}
+          ${metCard("Última Visita", p.ultima_visita)}
+        </div>
+
+        <div class="sec-hdr" style="margin-top:0">Asistencias por Mes</div>
+        <div class="table-responsive mb-3">
+          <table class="table table-bordered table-sm table-dash mb-0">
+            <thead><tr>${allMeses.map(m=>`<th>${m}</th>`).join("")}</tr></thead>
+            <tbody><tr>${mesRow}</tr></tbody>
+          </table>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="sec-hdr" style="margin-top:0">Días de Semana Preferidos</div>
+            <div class="table-responsive">
+              <table class="table table-bordered table-sm table-dash mb-0">
+                <thead><tr>${p.por_dia.map(d=>`<th>${d.dia}</th>`).join("")}</tr></thead>
+                <tbody><tr>${diaRow}</tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="sec-hdr" style="margin-top:0">Distribución por Intervalo de Hora</div>
+            <div class="table-responsive">
+              <table class="table table-bordered table-sm table-dash mb-0">
+                <thead><tr>${p.por_intervalo.map(iv=>`<th>${iv.intervalo}</th>`).join("")}</tr></thead>
+                <tbody><tr>${ivlRow}</tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  el.innerHTML = cards;
+}
+
+// ───────── ANÁLISIS POR FECHA ─────────
+function clearFechaFin(){
+  document.getElementById("fechaFin").value="";
+}
+
+async function loadFechas(){
+  const ini = document.getElementById("fechaInicio").value;
+  const fin = document.getElementById("fechaFin").value;
+  if(!ini){ alert("Por favor ingresa una fecha de inicio."); return; }
+  loading(true);
+  try{
+    const url = `/api/fechas?inicio=${ini}${fin?`&fin=${fin}`:""}`;
+    const r = await fetch(url);
+    const d = await r.json();
+    if(d.error){ document.getElementById("fechasContent").innerHTML=errCard(d.error); return; }
+    renderFechas(d);
+  }catch(e){ document.getElementById("fechasContent").innerHTML=errCard("Error: "+e.message); }
+  finally{ loading(false); }
+}
+
+function renderFechas(d){
+  const el = document.getElementById("fechasContent");
+  if(!d.por_fecha||d.por_fecha.length===0){
+    el.innerHTML=`<div class="alert alert-info mt-2"><i class="bi bi-info-circle me-2"></i>No se encontraron registros en el rango de fechas seleccionado.</div>`;
+    return;
+  }
+
+  // Summary cards
+  const rTitle = d.inicio===d.fin?`Fecha: ${d.inicio}`:`Rango: ${d.inicio} → ${d.fin}`;
+
+  // Resumen table
+  const resVals = d.resumen.map(r=>r.total);
+  let resRows = d.resumen.map(r=>`
+    <tr>
+      <td style="font-family:monospace;font-size:.78rem">${r.id}</td>
+      <td>${r.nombre}</td><td>${r.apellidos}</td>
+      <td><span class="badge ${r.tipo==='Niño'?'bg-info':'bg-warning text-dark'}">${r.tipo}</span></td>
+      <td class="${cc(r.total,resVals)} fw-bold">${r.total}</td>
+    </tr>`).join("");
+
+  // Per-date accordion
+  let fechaAccordion = d.por_fecha.map((fd,i)=>{
+    const entVals = fd.entradas.map(e=>e.apariciones);
+    let entRows = fd.entradas.map(e=>`
+      <tr>
+        <td style="font-family:monospace;font-size:.78rem">${e.id}</td>
+        <td>${e.nombre}</td><td>${e.apellidos}</td>
+        <td><span class="badge ${e.tipo==='Niño'?'bg-info':'bg-warning text-dark'}">${e.tipo}</span></td>
+        <td class="${cc(e.apariciones,entVals)} fw-bold">${e.apariciones}</td>
+      </tr>`).join("");
+
+    return `
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button ${i>0?'collapsed':''}" type="button" data-bs-toggle="collapse" data-bs-target="#fecha-${i}">
+          <strong>${fd.fecha}</strong>&nbsp;<span class="text-muted ms-2">${fd.dia_semana}</span>
+          <span class="badge bg-primary ms-3">${fd.total} registro${fd.total!==1?'s':''}</span>
+        </button>
+      </h2>
+      <div id="fecha-${i}" class="accordion-collapse collapse ${i===0?'show':''}">
+        <div class="accordion-body p-2">
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm table-dash mb-0">
+              <thead><tr><th>ID</th><th>Nombre</th><th>Apellidos</th><th>Tipo</th><th>Apariciones</th></tr></thead>
+              <tbody>${entRows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  el.innerHTML = `
+    <div class="row g-2 mb-3 mt-1">
+      ${metCard("Rango Analizado", d.inicio===d.fin?d.inicio:`${d.inicio} → ${d.fin}`)}
+      ${metCard("Total Registros", d.total_registros)}
+      ${metCard("Días con Actividad", d.por_fecha.length)}
+      ${metCard("IDs Únicos", d.resumen.length)}
+    </div>
+
+    <div class="sec-hdr">Resumen por ID (todos los días)</div>
+    <div class="table-responsive mb-3">
+      <table class="table table-bordered table-sm table-dash mb-0">
+        <thead><tr><th>ID</th><th>Nombre</th><th>Apellidos</th><th>Tipo</th><th>Total Apariciones</th></tr></thead>
+        <tbody>${resRows}</tbody>
+      </table>
+    </div>
+
+    <div class="sec-hdr">Detalle por Día</div>
+    <div class="accordion mb-3">${fechaAccordion}</div>
+  `;
+}
+
+// ───────── Init ─────────
+initSelects();
+loadMensual();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
